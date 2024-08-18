@@ -1,0 +1,10 @@
+ollama
+langchain_community
+langchain_core
+bs4
+chromadb
+unstructured
+markdown
+nltk
+numpy
+nomic-embed-text
