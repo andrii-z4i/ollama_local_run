@@ -1,5 +1,4 @@
-from collections import deque
-from typing import Iterable, List
+from typing import List
 from langchain_community.llms import Ollama
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader
@@ -12,7 +11,7 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 
 
 class OllamaLLM:
-    def __init__(self, model_name='gemma2:2b'):
+    def __init__(self, model_name='llama3.1'):
         self.model = Ollama(
             base_url='http://localhost:11434',
             model=model_name
