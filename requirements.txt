@@ -1,10 +1,10 @@
 ollama
 langchain_community
 langchain_core
+langchain-chroma
 bs4
 chromadb
 unstructured
 markdown
 nltk
 numpy
-nomic-embed-text
