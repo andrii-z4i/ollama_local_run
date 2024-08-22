@@ -11,13 +11,16 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 
 
 class OllamaLLM:
-    def __init__(self, model_name='llama3.1'):
+    def __init__(self, model_name='gemma2'):
         self.model = Ollama(
             base_url='http://localhost:11434',
             model=model_name
         )
         self.oembed = OllamaEmbeddings(base_url="http://localhost:11434", model="nomic-embed-text")
-        self.vectorstore = Chroma("wiki_store", self.oembed)
+        self.vectorstore = Chroma(
+            "wiki_store", 
+            self.oembed,
+            "./chroma_langchain_db")
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200)
@@ -53,7 +56,7 @@ class OllamaLLM:
             "You are an assistant for question-answering tasks. "
             "Use the following pieces of retrieved context to answer "
             "the question. If you don't know the answer, say that you "
-            "don't know. Use three sentences maximum and keep the "
+            "don't know. Use five sentences maximum and keep the "
             "answer concise."
             "\n\n"
             "{context}"
@@ -71,4 +74,11 @@ class OllamaLLM:
 
         result = rag_chain.invoke({"input": human_prompt})
         return result["answer"]
+
+    def is_vectorstore_empty(self) -> bool:
+        if self.vectorstore is None:
+            return True
+        # Check if the vectorstore has any documents
+        doc_count = self.vectorstore._collection.count()  # Assuming Chroma uses a collection with a count method
+        return doc_count == 0
 

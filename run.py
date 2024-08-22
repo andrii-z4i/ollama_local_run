@@ -22,10 +22,13 @@ def process_markdown_files(directory, llm: OllamaLLM):
 if __name__ == "__main__":
     ollama = OllamaLLM()
     wiki_path = "/Users/andriikozin/prj/ms/wiki"
-    tcs_wiki = "IdentityWiki/Services/Routing/TCS-(Traffic-Control-Service)"
+    tcs_wiki = "IdentityWiki"
     
     markdown_directory = '/'.join([wiki_path, tcs_wiki])
-    all_docs = process_markdown_files(markdown_directory, ollama)
+    
+    if ollama.is_vectorstore_empty():
+        print("Vectorstore is empty. Loading markdown files.")
+        process_markdown_files(markdown_directory, ollama)
     
     # Enter into an interactive loop for conversation
     while True:
