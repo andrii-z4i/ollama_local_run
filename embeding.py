@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_chroma import Chroma
@@ -28,7 +29,7 @@ class Embedding:
     def vectorstore(self):
         return self._vectorstore
         
-    async def aload_content_from_path(self, file_path) -> List[str]:
+    async def _aload_content_from_path(self, file_path) -> List[str]:
         print(f"Loading content of file: {file_path}") if self._debug else None
         
         loader = TextLoader(file_path)
@@ -43,6 +44,19 @@ class Embedding:
             return []
         
         return await self._vectorstore.aadd_documents(splits)
+    
+    async def aload_content_from_path(self, file_path) -> List[str]:
+        retries = 3
+        delay = 2 # seconds
+        for attempt in range(retries):
+            try:
+                return await self._aload_content_from_path(file_path)
+            except Exception as e:
+                print(f"Failed to load content from {file_path}. Retrying...") if self._debug else None
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    raise  # Re-raise the last exception if all retries fail
     
     def load_content_from_path(self, file_path) -> List[str]:
         print(f"Loading content of file: {file_path}") if self._debug else None
