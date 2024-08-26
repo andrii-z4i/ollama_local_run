@@ -3,6 +3,7 @@ from LLM import OllamaLLM
 from typing import Iterable, List
 from embeding import Embedding
 import asyncio
+from run_arguments import LlmRunArguments, RunArguments
 
 
 def enumerate_files(directory: str, extensions: List[str]) -> Iterable[str]:
@@ -24,16 +25,15 @@ async def process_files(directory: str, extensions: List[str], embedding: Embedd
     
 
 if __name__ == "__main__":
-    embedding = Embedding(debug=True)
+
+    run_args = RunArguments().parse()
+
+    embedding = Embedding(debug=run_args.verbose)
     ollama = OllamaLLM(embedding)
-    wiki_path = "/Users/andriikozin/prj/ms/wiki"
-    tcs_wiki = "IdentityWiki/Services"
     
-    markdown_directory = '/'.join([wiki_path, tcs_wiki])
-    
-    if embedding.is_vectorstore_empty():
+    if any([embedding.is_vectorstore_empty(), run_args.force_reload, run_args.soft_reload]):
         print("Vectorstore is empty. Loading markdown files.")
-        asyncio.run(process_files(markdown_directory, ['md'], embedding))
+        asyncio.run(process_files(run_args.directory_to_analyze, run_args.extensions, embedding))
     
     # Enter into an interactive loop for conversation
     while True:
