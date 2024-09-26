@@ -8,6 +8,9 @@ class LlmRunArguments:
         self._force_reload = namespace.force_reload
         self._soft_reload = namespace.soft_reload
         self._verbose = namespace.verbose
+        self._system_prompt = namespace.system_prompt
+        self._chroma_db_name = namespace.chroma_db_name
+        self._chroma_db_path = namespace.chroma_db_path
 
     @property
     def directory_to_analyze(self):
@@ -28,6 +31,18 @@ class LlmRunArguments:
     @property
     def verbose(self):
         return self._verbose
+    
+    @property
+    def system_prompt(self):
+        return self._system_prompt
+    
+    @property
+    def chroma_db_name(self):
+        return self._chroma_db_name
+    
+    @property
+    def chroma_db_path(self):
+        return self._chroma_db_path
 
 
 
@@ -71,6 +86,28 @@ class RunArguments:
             required=False,
             default=False,
             help='Verbose mode')
+        
+        self.parser.add_argument(
+            '--system-prompt',
+            type=str,
+            required=False,
+            default=None,
+            help='System prompt')
+
+        self.parser.add_argument(
+            '--chroma-db-name',
+            type=str,
+            required=False,
+            default='chroma_db',
+            help='Chroma db name')
+        
+        self.parser.add_argument(
+            '--chroma-db-path',
+            type=str,
+            required=False,
+            default='./chroma_db',
+            help='Chroma db path')
+
 
     def parse(self) -> LlmRunArguments:
         return_namespace = self.parser.parse_args()

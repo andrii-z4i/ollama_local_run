@@ -8,12 +8,14 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 class OllamaLLM:
     def __init__(self, 
                  embedding: Embedding,
-                 model_name='gemma2:2b'):
+                 model_name='gemma2:2b',
+                 system_prompt=None):
         self.model = Ollama(
             base_url='http://localhost:11434',
             model=model_name
         )
         self.embedding = embedding
+        self.system_prompt = system_prompt
     
     def talk(self, human_prompt):
         if self.embedding.vectorstore is None:
@@ -22,11 +24,7 @@ class OllamaLLM:
         retriever = self.embedding.vectorstore.as_retriever()
         # 2. Incorporate the retriever into a question-answering chain.
         system_prompt = (
-            "You are an assistant for question-answering tasks. "
-            "Use the following pieces of retrieved context to answer "
-            "the question. If you don't know the answer, say that you "
-            "don't know. Use five sentences maximum and keep the "
-            "answer concise."
+            f"{self.system_prompt}"
             "\n\n"
             "{context}"
         )

@@ -3,7 +3,7 @@ from LLM import OllamaLLM
 from typing import Iterable, List
 from embeding import Embedding
 import asyncio
-from run_arguments import LlmRunArguments, RunArguments
+from run_arguments import RunArguments
 
 
 def enumerate_files(directory: str, extensions: List[str]) -> Iterable[str]:
@@ -28,8 +28,12 @@ if __name__ == "__main__":
 
     run_args = RunArguments().parse()
 
-    embedding = Embedding(debug=run_args.verbose)
-    ollama = OllamaLLM(embedding)
+    embedding = Embedding(
+        chroma_db_name=run_args.chroma_db_name,
+        chroma_db_path=run_args.chroma_db_path,
+        debug=run_args.verbose
+        )
+    ollama = OllamaLLM(embedding, system_prompt=run_args.system_prompt)
     
     if any([embedding.is_vectorstore_empty(), run_args.force_reload, run_args.soft_reload]):
         print("Vectorstore is empty. Loading markdown files.")
