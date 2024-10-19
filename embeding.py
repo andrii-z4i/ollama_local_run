@@ -38,7 +38,7 @@ class Embedding:
     async def _aload_content_from_path(self, file_path) -> List[str]:
         print(f"Loading content of file: {file_path}") if self._debug else None
         
-        loader = TextLoader(file_path, encoding='utf-8')
+        loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
         docs = await loader.aload()
         if not docs or len(docs) == 0:
             print(f"{file_path}. Skipping, empty.") if self._debug else None
