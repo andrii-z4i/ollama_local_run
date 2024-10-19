@@ -2,6 +2,7 @@ ollama
 langchain_community
 langchain_core
 langchain-chroma
+langchain-ollama
 bs4
 chromadb
 unstructured

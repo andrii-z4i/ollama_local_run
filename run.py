@@ -6,18 +6,20 @@ import asyncio
 from run_arguments import RunArguments
 
 
-def enumerate_files(directory: str, extensions: List[str]) -> Iterable[str]:
+def enumerate_files(directory: str, extensions: List[str], exclude_subfolders: List[str],) -> Iterable[str]:
     for filename in os.listdir(directory):
+        if filename in exclude_subfolders:
+            continue
         full_path = os.path.join(directory, filename)
         # if filename ends with one of the extensions
         if any([filename.endswith(ext) for ext in extensions]):
             yield full_path
         elif os.path.isdir(full_path):
-            yield from enumerate_files(full_path, extensions)
+            yield from enumerate_files(full_path, extensions, exclude_subfolders)
 
-async def process_files(directory: str, extensions: List[str], embedding: Embedding):
+async def process_files(directory: str, extensions: List[str], exclude_subfolders: List[str], embedding: Embedding):
     tasks = []
-    for file_for_processing in enumerate_files(directory, extensions):
+    for file_for_processing in enumerate_files(directory, extensions, exclude_subfolders):
         tasks.append(embedding.aload_content_from_path(file_for_processing))
     
     await asyncio.gather(*tasks)
@@ -37,7 +39,7 @@ if __name__ == "__main__":
     
     if any([embedding.is_vectorstore_empty(), run_args.force_reload, run_args.soft_reload]):
         print("Vectorstore is empty. Loading markdown files.")
-        asyncio.run(process_files(run_args.directory_to_analyze, run_args.extensions, embedding))
+        asyncio.run(process_files(run_args.directory_to_analyze, run_args.extensions, run_args.exclude_subdirectories, embedding))
     
     # Enter into an interactive loop for conversation
     while True:

@@ -1,5 +1,5 @@
 from embeding import Embedding
-from langchain_community.llms import Ollama
+from langchain_ollama import OllamaLLM as _OllamaLLM
 from langchain.chains.retrieval import create_retrieval_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.chains.combine_documents import create_stuff_documents_chain
@@ -10,7 +10,7 @@ class OllamaLLM:
                  embedding: Embedding,
                  model_name='gemma2:2b',
                  system_prompt=None):
-        self.model = Ollama(
+        self.model = _OllamaLLM(
             base_url='http://localhost:11434',
             model=model_name
         )
