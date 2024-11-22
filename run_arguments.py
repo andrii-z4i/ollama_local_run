@@ -11,6 +11,7 @@ class LlmRunArguments:
         self._system_prompt = namespace.system_prompt
         self._chroma_db_name = namespace.chroma_db_name
         self._chroma_db_path = namespace.chroma_db_path
+        self._exclude_subdirectories = namespace.exclude_subdirectories
 
     @property
     def directory_to_analyze(self):
@@ -43,6 +44,10 @@ class LlmRunArguments:
     @property
     def chroma_db_path(self):
         return self._chroma_db_path
+    
+    @property
+    def exclude_subdirectories(self):
+        return self._exclude_subdirectories
 
 
 
@@ -107,6 +112,14 @@ class RunArguments:
             required=False,
             default='./chroma_db',
             help='Chroma db path')
+        
+        self.parser.add_argument(
+            '--exclude-subdirectories',
+            type=str,
+            nargs='+',
+            required=False,
+            default=[],
+            help='Subfolders to exclude')
 
 
     def parse(self) -> LlmRunArguments:
