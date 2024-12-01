@@ -3,6 +3,7 @@ from typing import List
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
 from enum import Enum
 
@@ -39,19 +40,44 @@ class Embedding:
     @property
     def vectorstore(self):
         return self._vectorstore[0]
+    
+    def find_documents_in_vectorstore(self, document_path: str) -> list[Document]:
+        """
+        Check if a specific document (by path) is in the Chroma vector store with metadata filtering.
+        
+        Args:
+            vectorstore (Chroma): The Chroma vector store instance.
+            document_path (str): The path of the document to check.
+            
+        Returns:
+            bool: True if the document is in the vector store, False otherwise.
+        """
+        # Filter the vector store by metadata
+        filter_criteria = {"source": document_path}  # Adjust key to match your metadata key
+        results = self.vectorstore.search(
+            query_texts=["dummy"],  # Replace with any dummy query text (not used in filtering)
+            filter=filter_criteria
+        )
+        
+        # Check if any results are returned
+        return results
+
         
     async def _aload_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
-        print(f"Loading content of file: {file_path}") if self._debug else None
+        print(f"Loading content of file: {file_path} for processing mode {process_mode}") if self._debug else None
         
         if process_mode != EmbeddingProcessMode.FORCE_RELOAD and process_mode != EmbeddingProcessMode.SOFT_RELOAD:
             raise ValueError("Invalid process mode.")
 
-        if process_mode == EmbeddingProcessMode.SOFT_RELOAD:
-            # Check if the file has already been processed
-            raise NotImplementedError("Soft reload not implemented yet.")
-            # If file is in the vectorstore and checksum is the same, skip processing
-            if self._vectorstore[0].document_exists(file_path):
-                print(f"{file_path}. Skipping, already processed.") if self._debug else None
+        _documents = self.find_documents_in_vectorstore(file_path)
+
+        if len(_documents) != 0:
+            if process_mode == EmbeddingProcessMode.FORCE_RELOAD:
+                print(f"Found {len(_documents)} documents to delete in vectorstore for path {file_path}") if self._debug else None
+                self.vectorstore.delete([doc.id for doc in _documents])
+            elif process_mode == EmbeddingProcessMode.SOFT_RELOAD:
+                # delete only if checksum is different
+                raise NotImplementedError("Soft reload not implemented yet.")
                 return []
         
 
@@ -89,22 +115,3 @@ class Embedding:
                 else:
                     raise  # Re-raise the last exception if all retries fail
     
-    def load_content_from_path(self, file_path) -> List[str]:
-        print(f"Loading content of file: {file_path}") if self._debug else None
-        
-        loader = TextLoader(file_path)
-        docs = loader.load()
-        if not docs or len(docs) == 0:
-            print(f"{file_path}. Skipping, empty.") if self._debug else None
-            return []
-
-        _text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self._text_splitter_chunk_size,
-            chunk_overlap=self._text_splitter_chunk_overlap)
-        
-        splits = _text_splitter.split_documents(docs)
-        if splits is None or len(splits) == 0:
-            print(f"{file_path}. Skipping. No splits to add.") if self._debug else None
-            return []
-        
-        return self._vectorstore[0].add_documents(splits)
