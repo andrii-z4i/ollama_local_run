@@ -27,6 +27,8 @@ class OllamaLLM:
             f"{self.system_prompt}"
             "\n\n"
             "{context}"
+            "You must answer the user's question strictly based on the context provided. "
+            "If the answer cannot be determined from the context, respond with 'The information is not available in the provided context.'"
         )
 
         prompt = ChatPromptTemplate.from_messages(

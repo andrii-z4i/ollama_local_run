@@ -1,30 +1,9 @@
-import os
 from LLM import OllamaLLM
-from typing import Iterable, List
-from embeding import Embedding
+from embeding import Embedding, EmbeddingProcessMode
 import asyncio
 from run_arguments import RunArguments
+from files_processor import FilesProcessor
 
-
-def enumerate_files(directory: str, extensions: List[str], exclude_subfolders: List[str],) -> Iterable[str]:
-    for filename in os.listdir(directory):
-        if filename in exclude_subfolders:
-            continue
-        full_path = os.path.join(directory, filename)
-        # if filename ends with one of the extensions
-        if any([filename.endswith(ext) for ext in extensions]):
-            yield full_path
-        elif os.path.isdir(full_path):
-            yield from enumerate_files(full_path, extensions, exclude_subfolders)
-
-async def process_files(directory: str, extensions: List[str], exclude_subfolders: List[str], embedding: Embedding):
-    tasks = []
-    for file_for_processing in enumerate_files(directory, extensions, exclude_subfolders):
-        tasks.append(embedding.aload_content_from_path(file_for_processing))
-    
-    await asyncio.gather(*tasks)
-        
-    
 
 if __name__ == "__main__":
 
@@ -37,9 +16,17 @@ if __name__ == "__main__":
         )
     ollama = OllamaLLM(embedding, system_prompt=run_args.system_prompt)
     
-    if any([embedding.is_vectorstore_empty(), run_args.force_reload, run_args.soft_reload]):
-        print("Vectorstore is empty. Loading markdown files.")
-        asyncio.run(process_files(run_args.directory_to_analyze, run_args.extensions, run_args.exclude_subdirectories, embedding))
+    if all([run_args.force_reload, run_args.soft_reload]):
+        raise ValueError("You can only specify one of the reload modes.")
+    
+    if run_args.force_reload:
+        process_mode = EmbeddingProcessMode.FORCE_RELOAD
+    elif run_args.soft_reload:
+        process_mode = EmbeddingProcessMode.SOFT_RELOAD
+
+    files_processor = FilesProcessor(embedding, run_args.directory_to_analyze, run_args.extensions, run_args.exclude_subdirectories, process_mode)
+
+    asyncio.run(files_processor.process_files())
     
     # Enter into an interactive loop for conversation
     while True:

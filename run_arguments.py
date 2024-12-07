@@ -68,7 +68,7 @@ class RunArguments:
             required=True,
             help='Extensions to analyze')
         
-        # argument for the force reload of embeddings
+        # argument for the force reload of embeddings (it will reload all embeddings)
         self.parser.add_argument(
             '--force-reload', 
             action='store_true', 
@@ -76,12 +76,12 @@ class RunArguments:
             default=False,
             help='Force reload of embeddings')
         
-        # argument for the soft reload of embeddings (it will reload only if file is not in the vectorstore)
+        # argument for the soft reload of embeddings (it will reload only if file is not in the vectorstore or is different by content)
         self.parser.add_argument(
             '--soft-reload', 
             action='store_true',
             required=False,
-            default=False,
+            default=True,
             help='Soft reload of embeddings')
 
         # argument for the verbose mode        
