@@ -38,10 +38,10 @@ class FilesProcessor:
             elif os.path.isdir(full_path):
                 yield from self.enumerate_files(full_path)
 
-    async def process_files(self):
-        tasks = []
-        for file_for_processing in self.enumerate_files(self.directory):
-            tasks.append(self.embedding.aload_content_from_path(file_for_processing[0], file_for_processing[1], self.process_mode))
+    def process_files(self):
         
-        await asyncio.gather(*tasks)
+        for file_for_processing in self.enumerate_files(self.directory):
+            self.embedding.load_content_from_path(file_for_processing[0], file_for_processing[1], self.process_mode)
+        
+        
         

@@ -20,26 +20,16 @@ class Embedding:
                 chroma_db_path: str = "./chroma_db",
                 text_splitter_chunk_size: int = 1000,
                 text_splitter_chunk_overlap: int = 200,
-                vectorstore_connections: int = 10,
                 debug: bool = False) -> None:
         self._debug = debug
         self._oembed = OllamaEmbeddings(base_url=ollama_base_url, model=ollama_model)
-        
-        if vectorstore_connections < 1:
-            raise ValueError("Vectorstore connections must be more than 1.")
-        
-        self._vectorstore = [Chroma(
-            chroma_db_name, 
-            self._oembed,
-            chroma_db_path) for _ in range(vectorstore_connections)]
-        
-        self._next_vectorstore = 0
+        self._vectorstore = Chroma( chroma_db_name, self._oembed, chroma_db_path) 
         self._text_splitter_chunk_size = text_splitter_chunk_size
         self._text_splitter_chunk_overlap = text_splitter_chunk_overlap
     
     @property
     def vectorstore(self):
-        return self._vectorstore[0]
+        return self._vectorstore
     
     def find_documents_in_vectorstore(self, document_path: str) -> list[Document]:
         """
@@ -55,7 +45,8 @@ class Embedding:
         # Filter the vector store by metadata
         filter_criteria = {"source": document_path}  # Adjust key to match your metadata key
         results = self.vectorstore.search(
-            query_texts=["dummy"],  # Replace with any dummy query text (not used in filtering)
+            query="dummy",  # Replace with any dummy query text (not used in filtering)
+            search_type="similarity",
             filter=filter_criteria
         )
         
@@ -63,7 +54,7 @@ class Embedding:
         return results
 
         
-    async def _aload_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
+    def load_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
         print(f"Loading content of file: {file_path} for processing mode {process_mode}") if self._debug else None
         
         if process_mode != EmbeddingProcessMode.FORCE_RELOAD and process_mode != EmbeddingProcessMode.SOFT_RELOAD:
@@ -76,13 +67,15 @@ class Embedding:
                 print(f"Found {len(_documents)} documents to delete in vectorstore for path {file_path}") if self._debug else None
                 self.vectorstore.delete([doc.id for doc in _documents])
             elif process_mode == EmbeddingProcessMode.SOFT_RELOAD:
+                print(f"Found {len(_documents)} documents to verify in vectorstore for path {file_path}") if self._debug else None
+                print(f"File ids: {[str(doc) for doc in _documents]}") if self._debug else None
                 # delete only if checksum is different
                 raise NotImplementedError("Soft reload not implemented yet.")
                 return []
         
 
         loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
-        docs = await loader.aload()
+        docs = loader.load()
         if not docs or len(docs) == 0:
             print(f"{file_path}. Skipping, empty.") if self._debug else None
             return []
@@ -96,22 +89,19 @@ class Embedding:
             print(f"{file_path}. Skipping. No splits to add.") if self._debug else None
             return []
         
-        # round robin pick of vectorstore to load balance the connections
-        self._next_vectorstore += 1
-        self._next_vectorstore = self._next_vectorstore % len(self._vectorstore)
-        print(f"----> Adding to vectorstore {self._next_vectorstore}") if self._debug else None
-        return await self._vectorstore[self._next_vectorstore].aadd_documents(splits)
+        print(f"----> Adding to vectorstore") if self._debug else None
+        return self._vectorstore.add_documents(splits)
     
-    async def aload_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
-        retries = 3
-        delay = 2 # seconds
-        for attempt in range(retries):
-            try:
-                return await self._aload_content_from_path(file_path, checksum, process_mode)
-            except Exception as e:
-                print(f"Failed to load content from {file_path}. Retrying...") if self._debug else None
-                if attempt < retries - 1:
-                    await asyncio.sleep(delay)
-                else:
-                    raise  # Re-raise the last exception if all retries fail
+    # async def aload_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
+    #     retries = 3
+    #     delay = 2 # seconds
+    #     for attempt in range(retries):
+    #         try:
+    #             return await self._aload_content_from_path(file_path, checksum, process_mode)
+    #         except Exception as e:
+    #             print(f"Failed to load content from {file_path}. Retrying...") if self._debug else None
+    #             if attempt < retries - 1:
+    #                 await asyncio.sleep(delay)
+    #             else:
+    #                 raise  # Re-raise the last exception if all retries fail
     

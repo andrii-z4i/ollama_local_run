@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+from typing import Sequence
 
 # interface for the run arguments which we will return from the parse method
 class LlmRunArguments:
@@ -8,7 +9,6 @@ class LlmRunArguments:
         self._force_reload = namespace.force_reload
         self._soft_reload = namespace.soft_reload
         self._verbose = namespace.verbose
-        self._system_prompt = namespace.system_prompt
         self._chroma_db_name = namespace.chroma_db_name
         self._chroma_db_path = namespace.chroma_db_path
         self._exclude_subdirectories = namespace.exclude_subdirectories
@@ -32,10 +32,6 @@ class LlmRunArguments:
     @property
     def verbose(self):
         return self._verbose
-    
-    @property
-    def system_prompt(self):
-        return self._system_prompt
     
     @property
     def chroma_db_name(self):
@@ -91,13 +87,6 @@ class RunArguments:
             required=False,
             default=False,
             help='Verbose mode')
-        
-        self.parser.add_argument(
-            '--system-prompt',
-            type=str,
-            required=False,
-            default=None,
-            help='System prompt')
 
         self.parser.add_argument(
             '--chroma-db-name',
@@ -122,7 +111,7 @@ class RunArguments:
             help='Subfolders to exclude')
 
 
-    def parse(self) -> LlmRunArguments:
-        return_namespace = self.parser.parse_args()
+    def parse(self, args: Sequence[str] = None) -> LlmRunArguments:
+        return_namespace = self.parser.parse_args(args=args)
         return LlmRunArguments(return_namespace)
         
