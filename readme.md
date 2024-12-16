@@ -33,8 +33,12 @@ on Linux
 How to run?
 ---
 
-Help
-`python .\run.py --help`
+System contains of two running modules:
+1. `Files processing` which is responsible for enumeration of files in directories and preparing the binary representation of data (embedding)
+1. `Chat` which is responsible for connecting the prepared embedding for actual conversation based on it.
 
-Example of real run
-`python .\run.py --directory-to-analyze ..\Services\Routing  --extensions md --verbose --system-prompt "You are the engineer on the routing space where Gateway and Traffic Control services are developed"`
+To run the #1 
+`python .\run_files_processing.py --directory-to-analyze 'C:\Users\andriikozin\prj\ms\tct-doc\TCS\OCE\DNS\Monitoring\Thousand Eyes' --extensions md --verbose`
+
+To run the #2
+`python .\chat.py --system-prompt "I'm the customer of the TCS"`
