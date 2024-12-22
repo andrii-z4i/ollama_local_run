@@ -38,7 +38,7 @@ System contains of two running modules:
 1. `Chat` which is responsible for connecting the prepared embedding for actual conversation based on it.
 
 To run the #1 
-`python .\run_files_processing.py --directory-to-analyze 'C:\Users\andriikozin\prj\ms\tct-doc\TCS\OCE\DNS\Monitoring\Thousand Eyes' --extensions md --verbose`
+`python .\run_files_processing.py --directory-to-analyze 'some/path/to/files' --extensions md --verbose --reload`
 
 To run the #2
-`python .\chat.py --system-prompt "I'm the customer of the TCS"`
+`python .\chat.py --system-prompt "I'm the customer of the Super Nice system"`

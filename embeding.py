@@ -28,16 +28,6 @@ class Embedding:
         return self._vectorstore
     
     def find_documents_in_vectorstore(self, document_path: str) -> list[Document]:
-        """
-        Check if a specific document (by path) is in the Chroma vector store with metadata filtering.
-        
-        Args:
-            vectorstore (Chroma): The Chroma vector store instance.
-            document_path (str): The path of the document to check.
-            
-        Returns:
-            bool: True if the document is in the vector store, False otherwise.
-        """
         # Filter the vector store by metadata
         filter_criteria = {"source": document_path }  # Adjust key to match your metadata key
         results = self.vectorstore.search(
@@ -46,8 +36,11 @@ class Embedding:
             filter=filter_criteria
         )
         
-        # Check if any results are returned
         return results
+    
+    def get_list_of_stored_files(self) -> List[str]:
+        _all_documents = self.vectorstore._collection.get()
+        return list(set([metadata["source"] for metadata in _all_documents['metadatas']]))
     
     def _delete_documents_by_path(self, document_path: str) -> None:
         print(f"Deleting documents by path {document_path}") if self._debug else None

@@ -41,8 +41,19 @@ class FilesProcessor:
 
     def process_files(self):
         print(f"Files will be processed in the reload mode: {self.reload}") if self.verbose else None
-        for file_for_processing in self.enumerate_files(self.directory):
+        _files_to_process = [file for file in self.enumerate_files(self.directory)]
+        for file_for_processing in _files_to_process:
             self.embedding.load_content_from_path(file_for_processing[0], file_for_processing[1], self.reload)
+        
+        print(f"Files processed: {len(_files_to_process)}") if self.verbose else None
+        # delete files from embedding that are not in the directory
+        _files = self.embedding.get_list_of_stored_files()
+        _files_to_compare_to = [file[0] for file in _files_to_process]
+        
+        for file in _files:
+            if file not in _files_to_compare_to:
+                self.embedding._delete_documents_by_path(file)
+                print(f"File {file} was deleted from the vectorstore") if self.verbose else None
         
         
         

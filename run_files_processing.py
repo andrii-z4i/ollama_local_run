@@ -4,16 +4,7 @@ from files_processor import FilesProcessor
 
 
 if __name__ == "__main__":
-
-    args = [
-        '--directory-to-analyze', 'C:\\Users\\andriikozin\\prj\\ms\\tct-doc\\TCS\\OCE\\DNS\\Monitoring\\Thousand Eyes',
-        '--extensions', 'md',
-        '--reload',
-        '--verbose'
-    ]
-
-    # FIXME: replace with None
-    run_args = RunArguments().parse(None)
+    run_args = RunArguments().parse()
 
     embedding = Embedding(
         chroma_db_name=run_args.chroma_db_name,
