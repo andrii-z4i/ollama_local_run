@@ -1,14 +1,13 @@
 from argparse import ArgumentParser, Namespace
+from typing import Sequence
 
 # interface for the run arguments which we will return from the parse method
 class LlmRunArguments:
     def __init__(self, namespace: Namespace):
         self._directory_to_analyze = namespace.directory_to_analyze
         self._extensions = namespace.extensions
-        self._force_reload = namespace.force_reload
-        self._soft_reload = namespace.soft_reload
+        self._reload = namespace.reload
         self._verbose = namespace.verbose
-        self._system_prompt = namespace.system_prompt
         self._chroma_db_name = namespace.chroma_db_name
         self._chroma_db_path = namespace.chroma_db_path
         self._exclude_subdirectories = namespace.exclude_subdirectories
@@ -22,20 +21,12 @@ class LlmRunArguments:
         return self._extensions
     
     @property
-    def force_reload(self):
-        return self._force_reload
-    
-    @property
-    def soft_reload(self):
-        return self._soft_reload
+    def reload(self):
+        return self._reload
     
     @property
     def verbose(self):
         return self._verbose
-    
-    @property
-    def system_prompt(self):
-        return self._system_prompt
     
     @property
     def chroma_db_name(self):
@@ -68,21 +59,13 @@ class RunArguments:
             required=True,
             help='Extensions to analyze')
         
-        # argument for the force reload of embeddings
+        # argument for the soft reload of embeddings (it will reload only if file is not in the vectorstore or is different by content)
         self.parser.add_argument(
-            '--force-reload', 
-            action='store_true', 
-            required=False,
-            default=False,
-            help='Force reload of embeddings')
-        
-        # argument for the soft reload of embeddings (it will reload only if file is not in the vectorstore)
-        self.parser.add_argument(
-            '--soft-reload', 
+            '--reload', 
             action='store_true',
             required=False,
             default=False,
-            help='Soft reload of embeddings')
+            help='Reload embeddings if checksum is different')
 
         # argument for the verbose mode        
         self.parser.add_argument(
@@ -91,13 +74,6 @@ class RunArguments:
             required=False,
             default=False,
             help='Verbose mode')
-        
-        self.parser.add_argument(
-            '--system-prompt',
-            type=str,
-            required=False,
-            default=None,
-            help='System prompt')
 
         self.parser.add_argument(
             '--chroma-db-name',
@@ -122,7 +98,7 @@ class RunArguments:
             help='Subfolders to exclude')
 
 
-    def parse(self) -> LlmRunArguments:
-        return_namespace = self.parser.parse_args()
+    def parse(self, args: Sequence[str] = None) -> LlmRunArguments:
+        return_namespace = self.parser.parse_args(args=args)
         return LlmRunArguments(return_namespace)
         

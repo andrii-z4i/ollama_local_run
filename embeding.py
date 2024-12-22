@@ -3,7 +3,9 @@ from typing import List
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
+from enum import Enum
 
 
 class Embedding:
@@ -14,87 +16,76 @@ class Embedding:
                 chroma_db_path: str = "./chroma_db",
                 text_splitter_chunk_size: int = 1000,
                 text_splitter_chunk_overlap: int = 200,
-                vectorstore_connections: int = 10,
                 debug: bool = False) -> None:
         self._debug = debug
         self._oembed = OllamaEmbeddings(base_url=ollama_base_url, model=ollama_model)
-        
-        if vectorstore_connections < 1:
-            raise ValueError("Vectorstore connections must be more than 1.")
-        
-        self._vectorstore = [Chroma(
-            chroma_db_name, 
-            self._oembed,
-            chroma_db_path) for _ in range(vectorstore_connections)]
-        
-        self._next_vectorstore = 0
+        self._vectorstore = Chroma( chroma_db_name, self._oembed, chroma_db_path) 
         self._text_splitter_chunk_size = text_splitter_chunk_size
         self._text_splitter_chunk_overlap = text_splitter_chunk_overlap
     
     @property
     def vectorstore(self):
-        return self._vectorstore[0]
+        return self._vectorstore
+    
+    def find_documents_in_vectorstore(self, document_path: str) -> list[Document]:
+        # Filter the vector store by metadata
+        filter_criteria = {"source": document_path }  # Adjust key to match your metadata key
+        results = self.vectorstore.search(
+            query="dummy",  # Replace with any dummy query text (not used in filtering)
+            search_type="similarity",
+            filter=filter_criteria
+        )
         
-    async def _aload_content_from_path(self, file_path) -> List[str]:
-        print(f"Loading content of file: {file_path}") if self._debug else None
+        return results
+    
+    def get_list_of_stored_files(self) -> List[str]:
+        _all_documents = self.vectorstore._collection.get()
+        return list(set([metadata["source"] for metadata in _all_documents['metadatas']]))
+    
+    def _delete_documents_by_path(self, document_path: str) -> None:
+        print(f"Deleting documents by path {document_path}") if self._debug else None
+        self.vectorstore._collection.delete(where={"source": document_path})
+    
+    def _should_files_be_deleted(self, documents: List[Document], checksum: str, reload: bool) -> bool:
+        if len(documents) == 0:
+            return False
         
-        loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
-        docs = await loader.aload()
-        if not docs or len(docs) == 0:
-            print(f"{file_path}. Skipping, empty.") if self._debug else None
-            return []
-        
-        _text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self._text_splitter_chunk_size,
-            chunk_overlap=self._text_splitter_chunk_overlap)
+        if reload == True:
+            return True if any([doc.metadata["checksum"] != checksum for doc in documents]) else False
+                
+        return False
 
-        splits = _text_splitter.split_documents(docs)
-        if splits is None or len(splits) == 0:
-            print(f"{file_path}. Skipping. No splits to add.") if self._debug else None
+    def load_content_from_path(self, file_path: str, checksum: str, reload: bool) -> List[str]:
+        
+        _documents = self.find_documents_in_vectorstore(file_path)
+        reload_after_delete = False
+        if self._should_files_be_deleted(_documents, checksum, reload):
+            self._delete_documents_by_path(file_path)
+            reload_after_delete = True
+        
+        
+        if not reload_after_delete and len(_documents) > 0:
+            print(f"{file_path}. Skipping. Document already in vectorstore.") if self._debug else None
             return []
-        
-        # round robin pick of vectorstore to load balance the connections
-        self._next_vectorstore += 1
-        self._next_vectorstore = self._next_vectorstore % len(self._vectorstore)
-        print(f"----> Adding to vectorstore {self._next_vectorstore}") if self._debug else None
-        return await self._vectorstore[self._next_vectorstore].aadd_documents(splits)
-    
-    async def aload_content_from_path(self, file_path) -> List[str]:
-        retries = 3
-        delay = 2 # seconds
-        for attempt in range(retries):
-            try:
-                return await self._aload_content_from_path(file_path)
-            except Exception as e:
-                print(f"Failed to load content from {file_path}. Retrying...") if self._debug else None
-                if attempt < retries - 1:
-                    await asyncio.sleep(delay)
-                else:
-                    raise  # Re-raise the last exception if all retries fail
-    
-    def load_content_from_path(self, file_path) -> List[str]:
-        print(f"Loading content of file: {file_path}") if self._debug else None
-        
-        loader = TextLoader(file_path)
+
+        loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
         docs = loader.load()
         if not docs or len(docs) == 0:
             print(f"{file_path}. Skipping, empty.") if self._debug else None
             return []
-
+        
+        # enrich documents with metadata
+        for doc in docs:
+            doc.metadata = {"source": file_path, "checksum": checksum}
+        
         _text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self._text_splitter_chunk_size,
             chunk_overlap=self._text_splitter_chunk_overlap)
-        
+
         splits = _text_splitter.split_documents(docs)
         if splits is None or len(splits) == 0:
             print(f"{file_path}. Skipping. No splits to add.") if self._debug else None
             return []
         
-        return self._vectorstore[0].add_documents(splits)
-
-    def is_vectorstore_empty(self) -> bool:
-        if self._vectorstore[0] is None:
-            return True
-        # Check if the vectorstore has any documents
-        doc_count = self._vectorstore[0]._collection.count()  # Assuming Chroma uses a collection with a count method
-        return doc_count == 0
+        print(f"----> Adding to vectorstore content of the file {file_path}") if self._debug else None
+        return self._vectorstore.add_documents(splits)
