@@ -1,8 +1,7 @@
 import hashlib
 import os
 from typing import Iterable, List, Tuple
-from embeding import Embedding, EmbeddingProcessMode
-import asyncio
+from embeding import Embedding
 
 
 class FilesProcessor:
@@ -11,12 +10,14 @@ class FilesProcessor:
                  directory: str, 
                  extensions: List[str], 
                  exclude_subfolders: List[str],
-                 process_mode: EmbeddingProcessMode) -> None:
+                 reload: bool = False,
+                 verbose: bool = False) -> None:
         self.embedding = embedding
         self.directory = directory
         self.extensions = extensions
         self.exclude_subfolders = exclude_subfolders
-        self.process_mode = process_mode
+        self.reload = reload
+        self.verbose = verbose
     
     def _calculate_checksum(self, file_path: str) -> str:
         # Calculate the checksum of the file by using hash algorithms
@@ -39,9 +40,9 @@ class FilesProcessor:
                 yield from self.enumerate_files(full_path)
 
     def process_files(self):
-        
+        print(f"Files will be processed in the reload mode: {self.reload}") if self.verbose else None
         for file_for_processing in self.enumerate_files(self.directory):
-            self.embedding.load_content_from_path(file_for_processing[0], file_for_processing[1], self.process_mode)
+            self.embedding.load_content_from_path(file_for_processing[0], file_for_processing[1], self.reload)
         
         
         

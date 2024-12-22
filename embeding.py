@@ -7,10 +7,6 @@ from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
 from enum import Enum
 
-class EmbeddingProcessMode(Enum):
-    SOFT_RELOAD = 1 # Process file only if checksum differes from the one in the vectorstore
-    FORCE_RELOAD = 2 # Process file regardless of the checksum in the vectorstore
-
 
 class Embedding:
     def __init__(self, 
@@ -43,7 +39,7 @@ class Embedding:
             bool: True if the document is in the vector store, False otherwise.
         """
         # Filter the vector store by metadata
-        filter_criteria = {"source": document_path}  # Adjust key to match your metadata key
+        filter_criteria = {"source": document_path }  # Adjust key to match your metadata key
         results = self.vectorstore.search(
             query="dummy",  # Replace with any dummy query text (not used in filtering)
             search_type="similarity",
@@ -52,33 +48,42 @@ class Embedding:
         
         # Check if any results are returned
         return results
-
+    
+    def _delete_documents_by_path(self, document_path: str) -> None:
+        print(f"Deleting documents by path {document_path}") if self._debug else None
+        self.vectorstore._collection.delete(where={"source": document_path})
+    
+    def _should_files_be_deleted(self, documents: List[Document], checksum: str, reload: bool) -> bool:
+        if len(documents) == 0:
+            return False
         
-    def load_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
-        print(f"Loading content of file: {file_path} for processing mode {process_mode}") if self._debug else None
-        
-        if process_mode != EmbeddingProcessMode.FORCE_RELOAD and process_mode != EmbeddingProcessMode.SOFT_RELOAD:
-            raise ValueError("Invalid process mode.")
+        if reload == True:
+            return True if any([doc.metadata["checksum"] != checksum for doc in documents]) else False
+                
+        return False
 
+    def load_content_from_path(self, file_path: str, checksum: str, reload: bool) -> List[str]:
+        
         _documents = self.find_documents_in_vectorstore(file_path)
-
-        if len(_documents) != 0:
-            if process_mode == EmbeddingProcessMode.FORCE_RELOAD:
-                print(f"Found {len(_documents)} documents to delete in vectorstore for path {file_path}") if self._debug else None
-                self.vectorstore.delete([doc.id for doc in _documents])
-            elif process_mode == EmbeddingProcessMode.SOFT_RELOAD:
-                print(f"Found {len(_documents)} documents to verify in vectorstore for path {file_path}") if self._debug else None
-                print(f"File ids: {[str(doc) for doc in _documents]}") if self._debug else None
-                # delete only if checksum is different
-                raise NotImplementedError("Soft reload not implemented yet.")
-                return []
+        reload_after_delete = False
+        if self._should_files_be_deleted(_documents, checksum, reload):
+            self._delete_documents_by_path(file_path)
+            reload_after_delete = True
         
+        
+        if not reload_after_delete and len(_documents) > 0:
+            print(f"{file_path}. Skipping. Document already in vectorstore.") if self._debug else None
+            return []
 
         loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
         docs = loader.load()
         if not docs or len(docs) == 0:
             print(f"{file_path}. Skipping, empty.") if self._debug else None
             return []
+        
+        # enrich documents with metadata
+        for doc in docs:
+            doc.metadata = {"source": file_path, "checksum": checksum}
         
         _text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self._text_splitter_chunk_size,
@@ -89,19 +94,5 @@ class Embedding:
             print(f"{file_path}. Skipping. No splits to add.") if self._debug else None
             return []
         
-        print(f"----> Adding to vectorstore") if self._debug else None
+        print(f"----> Adding to vectorstore content of the file {file_path}") if self._debug else None
         return self._vectorstore.add_documents(splits)
-    
-    # async def aload_content_from_path(self, file_path: str, checksum: str, process_mode: EmbeddingProcessMode) -> List[str]:
-    #     retries = 3
-    #     delay = 2 # seconds
-    #     for attempt in range(retries):
-    #         try:
-    #             return await self._aload_content_from_path(file_path, checksum, process_mode)
-    #         except Exception as e:
-    #             print(f"Failed to load content from {file_path}. Retrying...") if self._debug else None
-    #             if attempt < retries - 1:
-    #                 await asyncio.sleep(delay)
-    #             else:
-    #                 raise  # Re-raise the last exception if all retries fail
-    

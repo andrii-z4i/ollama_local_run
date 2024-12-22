@@ -6,8 +6,7 @@ class LlmRunArguments:
     def __init__(self, namespace: Namespace):
         self._directory_to_analyze = namespace.directory_to_analyze
         self._extensions = namespace.extensions
-        self._force_reload = namespace.force_reload
-        self._soft_reload = namespace.soft_reload
+        self._reload = namespace.reload
         self._verbose = namespace.verbose
         self._chroma_db_name = namespace.chroma_db_name
         self._chroma_db_path = namespace.chroma_db_path
@@ -22,12 +21,8 @@ class LlmRunArguments:
         return self._extensions
     
     @property
-    def force_reload(self):
-        return self._force_reload
-    
-    @property
-    def soft_reload(self):
-        return self._soft_reload
+    def reload(self):
+        return self._reload
     
     @property
     def verbose(self):
@@ -64,21 +59,13 @@ class RunArguments:
             required=True,
             help='Extensions to analyze')
         
-        # argument for the force reload of embeddings (it will reload all embeddings)
-        self.parser.add_argument(
-            '--force-reload', 
-            action='store_true', 
-            required=False,
-            default=False,
-            help='Force reload of embeddings')
-        
         # argument for the soft reload of embeddings (it will reload only if file is not in the vectorstore or is different by content)
         self.parser.add_argument(
-            '--soft-reload', 
+            '--reload', 
             action='store_true',
             required=False,
-            default=True,
-            help='Soft reload of embeddings')
+            default=False,
+            help='Reload embeddings if checksum is different')
 
         # argument for the verbose mode        
         self.parser.add_argument(
