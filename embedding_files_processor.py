@@ -1,12 +1,12 @@
-from embeding import Embedding
-from files_processing_run_arguments import RunArguments
-from files_processor import FilesProcessor
+from src.embeding_manager import EmbeddingManager
+from src.arguments.embedding_files_processor import RunArguments
+from src.files_processor import FilesProcessor
 
 
 if __name__ == "__main__":
     run_args = RunArguments().parse()
 
-    embedding = Embedding(
+    embedding = EmbeddingManager(
         chroma_db_name=run_args.chroma_db_name,
         chroma_db_path=run_args.chroma_db_path,
         debug=run_args.verbose
