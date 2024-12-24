@@ -1,5 +1,5 @@
-from LLM import OllamaLLM
-from chat_run_arguments import RunArguments
+from src.LLM import OllamaLLM
+from src.arguments.chat import RunArguments
 
 
 if __name__ == "__main__":
