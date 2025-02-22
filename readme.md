@@ -10,8 +10,8 @@ Configure ollama
 -----
 
 ```
-ollama run nomic-embed-text
-ollama run gemma2:2b
+ollama pull nomic-embed-text
+ollama pull gemma2:2b
 ```
 
 Create a virtual environment
@@ -38,7 +38,7 @@ System contains of two running modules:
 1. `Chat` which is responsible for connecting the prepared embedding for actual conversation based on it.
 
 To run the #1 
-`python .\embedding_files_processor  --directory-to-analyze 'some/path/to/files' --extensions md --verbose --reload`
+`python .\embedding_files_processor.py  --directory-to-analyze 'some/path/to/files' --extensions md --verbose --reload`
 
 To run the #2
 `python .\chat.py --system-prompt "I'm the customer of the Super Nice system"`
