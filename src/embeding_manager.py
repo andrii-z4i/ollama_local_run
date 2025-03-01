@@ -1,9 +1,13 @@
+import json
+import os
 from typing import List
+import chardet
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from langchain_community.document_loaders import TextLoader
+import yaml
 
 
 class EmbeddingManager:
@@ -125,8 +129,43 @@ class EmbeddingManager:
             print(f"Skipping. Document already in vectorstore. {file_path}") if self._debug else None
             return []
 
+        # Determine if the file is YAML and needs conversion to JSON
+        _, file_extension = os.path.splitext(file_path.lower())
+        
+        if file_extension in [".yaml", ".yml"]:
+            # Convert YAML to JSON before loading
+            try:
+                with open(file_path, "rb") as file:
+                    raw_data = file.read()
+                    result = chardet.detect(raw_data)
+                    encoding = result['encoding']
+                    yaml_content = yaml.safe_load(raw_data.decode(encoding))  # Load YAML
+
+                    # add the zone name to the json content
+                    # file path src/TCS/Topologies/AGS/Bleu/BL-cfg/a.bl.cfg.ags.identity.sovcloud-api.fr.yaml
+                    yaml_content["DNS zone"] = ".".join(file_path.split("/")[-1].split(".")[0:-1])
+                    # yaml_content["provider"] = "Akamai" if "akamai" in file_path.lower() else "Azure"
+
+                    json_content = json.dumps(yaml_content, indent=4, ensure_ascii=False)  # Convert to JSON
+                    temp_json_path = file_path + ".json"
+
+                    
+
+                    # Save JSON version for loading
+                    with open(temp_json_path, "w", encoding="utf-8") as json_file:
+                        json_file.write(json_content)
+                    
+                    print(f"Converted YAML to JSON: {file_path} → {temp_json_path}") if self._debug else None
+                    file_path = temp_json_path  # Load this instead
+
+            except yaml.YAMLError as e:
+                print(f"⚠️ Error parsing YAML file {file_path}: {e}")
+                return []
+
+        # Load the processed file (JSON if converted, original otherwise)
         loader = TextLoader(file_path, encoding='utf-8', autodetect_encoding=True)
         docs = loader.load()
+
         if not docs or len(docs) == 0:
             print(f"Skipping. Empty file. {file_path}") if self._debug else None
             return []

@@ -9,6 +9,7 @@ if __name__ == "__main__":
     ollama = OllamaLLM(
         chroma_db_name=run_args.chroma_db_name,
         chroma_db_path=run_args.chroma_db_path,
+        ollama_model='mxbai-embed-large',
         system_prompt=run_args.system_prompt
     )
     

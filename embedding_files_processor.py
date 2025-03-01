@@ -9,6 +9,7 @@ if __name__ == "__main__":
     embedding = EmbeddingManager(
         chroma_db_name=run_args.chroma_db_name,
         chroma_db_path=run_args.chroma_db_path,
+        ollama_model='mxbai-embed-large',
         debug=run_args.verbose
         )
 
