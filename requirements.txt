@@ -1,11 +1,9 @@
-ollama
-langchain_community
-langchain_core
-langchain-chroma
-langchain-ollama
-bs4
-chromadb
-unstructured
-markdown
-nltk
-numpy
+# LangChain ecosystem (RAG pipeline)
+langchain==0.3.28
+langchain-core==0.3.83
+langchain-community==0.3.31
+langchain-ollama==0.3.10
+langchain-chroma==0.2.6
+
+# Vector store
+chromadb==1.5.5
