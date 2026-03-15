@@ -118,8 +118,8 @@ class RunArguments:
             '--vision-model',
             type=str,
             required=False,
-            default='gemma3',
-            help='Ollama vision model to use (default: gemma3)')
+            default='gemma3:12b',
+            help='Ollama vision model to use (default: gemma3:12b)')
 
         self.parser.add_argument(
             '--ollama-url',
