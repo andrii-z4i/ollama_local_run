@@ -7,3 +7,11 @@ langchain-chroma==0.2.6
 
 # Vector store
 chromadb==1.5.5
+
+# Image processing
+Pillow>=10.0.0
+pillow-heif>=0.16.0
+geopy>=2.4.0
+
+# MCP server
+mcp>=1.0.0
