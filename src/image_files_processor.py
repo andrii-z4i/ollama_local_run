@@ -100,13 +100,18 @@ class ImageFilesProcessor:
             if self.verbose:
                 print(f"\n[{idx}/{total}] {os.path.basename(file_path)}")
 
-            if not self.embedding.should_reprocess(file_path, checksum, self.reload):
+            is_new = len(self.embedding.find_documents_by_source(file_path)) == 0
+
+            if not is_new and not self.embedding.should_reprocess(file_path, checksum, self.reload):
                 skipped += 1
                 if self.verbose:
                     print(f"  Skipped (already processed)")
                 continue
 
-            self.embedding.delete_by_source(file_path)
+            if not is_new:
+                if self.verbose:
+                    print(f"  Re-analyzing (content changed)...")
+                self.embedding.delete_by_source(file_path)
 
             # Step 1: Extract EXIF metadata
             if self.verbose:
